@@ -1,0 +1,442 @@
+---
+title: "Modelos"
+output: html_document
+date: '2024-07-14'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Librerias
+```{r}
+library(dplyr)
+library(ggplot2) #libreria para graficas
+library(stargazer)
+library(tidyr)
+library(readxl)
+library(caret)
+library(rpart)
+library(ggridges)
+```
+
+Leemos la base de datos
+```{r}
+data<- read_excel("C:/Users/René/Documents/CarpetaMomo/data/data.xlsx")
+datasinR<- read_excel("C:/Users/René/Documents/CarpetaMomo/data/datasinR.xlsx")
+```
+
+```{r}
+data <- data %>%
+  mutate(rendimiento_academico = case_when(
+    label < 4 ~ "R",
+    label >= 4 & label < 5 ~ "S",
+    label >= 5 & label < 6 ~ "B",
+    label >= 6 & label <= 7 ~ "MB",
+    TRUE ~ NA_character_  ))
+```
+
+```{r}
+datasinR <- datasinR %>%
+  mutate(rendimiento_academico = case_when(
+    label < 4 ~ "R",
+    label >= 4 & label < 5 ~ "S",
+    label >= 5 & label < 6 ~ "B",
+    label >= 6 & label <= 7 ~ "MB",
+    TRUE ~ NA_character_  ))
+```
+
+
+
+```{r}
+data <- data %>%
+  mutate(username = row_number())
+```
+
+```{r}
+datasinR <- datasinR %>%
+  mutate(username = row_number())
+```
+
+
+```{r}
+#Se modifican los niveles de las variables categoricas 
+
+data$username=as.factor(data$username)
+data$T=as.factor(data$T)
+data$rendimiento_academico=as.factor(data$rendimiento_academico)
+datasinR$username=as.factor(datasinR$username)
+datasinR$T=as.factor(datasinR$T)
+datasinR$rendimiento_academico=as.factor(datasinR$rendimiento_academico)
+```
+
+
+
+```{r}
+summary(data)
+```
+
+
+```{r}
+ggplot(data,aes(x=T,y=label))+
+  geom_boxplot(fill="red", alpha=0.2)+
+  xlab("Tipo de estudiante")+
+  ylab("Notas")+ 
+  ggtitle("Notas según tipo de estudiante")+ 
+  theme_bw()+ 
+  theme(plot.title = element_text(hjust = 0.5)) 
+```
+
+```{r}
+ggplot(data,aes(x=T,y=avg_session_time))+
+  geom_boxplot(fill="purple", alpha=0.2)+
+  xlab("Tipo de estudiante")+
+  ylab("Tiempo promedio por sesión")+ 
+  ggtitle("Tiempo promedio por sesión según tipo de estudiante")+ 
+  theme_bw()+ 
+  theme(plot.title = element_text(hjust = 0.5)) 
+```
+
+```{r}
+ggplot(data,aes(x=rendimiento_academico,y=avg_session_time))+
+  geom_boxplot(fill="blue", alpha=0.2)+
+  xlab("Cluster según rendimiento académico")+
+  ylab("Tiempo promedio por sesión")+ 
+  ggtitle("Tiempo promedio por sesión según 
+          cluster de rendimiento académico")+ 
+  theme_bw()+ 
+  theme(plot.title = element_text(hjust = 0.5)) 
+```
+```{r}
+ggplot(datasinR,aes(x=rendimiento_academico,y=avg_session_time))+
+  geom_boxplot(fill="green", alpha=0.2)+
+  xlab("Cluster según rendimiento académico")+
+  ylab("Tiempo promedio por sesión")+ 
+  ggtitle("Tiempo promedio por sesión según 
+          cluster de rendimiento académico")+ 
+  theme_bw()+ 
+  theme(plot.title = element_text(hjust = 0.5)) 
+```
+
+
+```{r}
+ggplot(data, aes(x = label, y = avg_session_time, color = rendimiento_academico)) +
+  geom_point() +
+  geom_smooth(method = "lm")+
+  xlab("Notas")+
+  ylab("Tiempo promedio por sesión")+
+  ggtitle("Tiempo promedio por sesión según notas
+          separado por cluster de rendimiento académico")+ 
+  theme_bw()+ 
+  theme(plot.title = element_text(hjust = 0.2))
+```
+
+```{r}
+ggplot(datasinR, aes(x = label, y = avg_session_time)) +
+  geom_point() +
+  geom_smooth(method = "lm")+
+  xlab("Notas")+
+  ylab("Tiempo promedio por sesión")+ 
+  ggtitle("Tiempo promedio por sesión según notas")+ 
+  theme_bw()+ 
+  theme(plot.title = element_text(hjust = 0.2))
+```
+
+```{r}
+ggplot(datasinR, aes(x = label, y = avg_session_time, color = rendimiento_academico)) +
+  geom_point() +
+  geom_smooth(method = "lm")+
+  xlab("Notas")+
+  ylab("Tiempo promedio por sesión")+ 
+  ggtitle("Tiempo promedio por sesión según notas
+          separado por cluster de rendimiento académico")+ 
+  theme_bw()+ 
+  theme(plot.title = element_text(hjust = 0.2))
+```
+
+```{r}
+custom_colors <- c("R" = "#FF0000", "S" = "#FFA500", "B" = "#800080", "MB" = "#0000FF")
+custom_colors1 <- c("0" = "#FF0000", "1" = "#FFA500", "2" = "#800080")
+```
+
+
+```{r}
+p <- data %>%
+  ggplot(aes(avg_session_time, y = ..count.., fill=rendimiento_academico)) +
+  scale_x_continuous(trans = "log2")+
+  xlab("Tiempo promedio por sesión")+
+  ylab("Densidad según tamaño del grupo")+ 
+  ggtitle("Tiempo promedio por sesión 
+          según cluster de rendimiento académico")+ 
+  theme_bw()+ 
+  theme(plot.title = element_text(hjust = 0.5))+
+geom_vline(xintercept = 80, linetype = "dashed", color = "red") + 
+  geom_density(alpha = 0.2) +
+  scale_fill_manual(values = custom_colors)+
+  labs(fill = "RA")
+```
+
+```{r}
+print(p)
+```
+
+```{r}
+q <- data %>%
+  ggplot(aes(avg_session_time, y = ..count.., fill=T)) +
+  scale_x_continuous(trans = "log2")+
+  xlab("Tiempo promedio por sesión")+
+  ylab("Densidad según tamaño del grupo")+ 
+  ggtitle("Tiempo promedio por sesión 
+          según tipo de estudiante")+ 
+  theme_bw()+ 
+  theme(plot.title = element_text(hjust = 0.5))+
+geom_vline(xintercept = 80, linetype = "dashed", color = "red") + 
+  geom_density(alpha = 0.2) +
+  scale_fill_manual(values = custom_colors1)
+```
+
+```{r}
+print(q)
+```
+
+
+-------------------------------------------------------------------------------------------------------------------------
+
+
+```{r}
+ggplot(datasinR, aes(x=avg_session_time, y=label)) + 
+  geom_point() +
+  geom_smooth(method='lm', formula=y~x, se=FALSE, col='dodgerblue1') +
+  geom_smooth(method='lm', formula=y~x+I(x^2), se=FALSE, col='tomato') +
+  geom_smooth(method='lm', formula=y~x+I(x^2)+I(x^3), se=FALSE, col='green') +
+  geom_smooth(method='lm', formula=y~x+I(x^2)+I(x^3)+I(x^4)+I(x^5)+I(x^6), se=FALSE, col='purple') +
+  theme_light()
+```
+
+
+```{r}
+ggplot(datasinR, aes(x=avg_session_time, y=label)) + 
+  geom_point() +
+  geom_smooth(method='lm', formula=y~x+I(x^2)+I(x^3), se=FALSE, col='green') +
+  geom_smooth(method='lm', formula=y~x+I(x^2)+I(x^3)+I(x^4)+I(x^5)+I(x^6), se=FALSE, col='purple') +
+geom_vline(xintercept = 150, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = 5.3, linetype = "dashed", color = "red") +
+  theme_light()
+```
+
+
+```{r}
+ggplot(datasinR, aes(x=avg_session_time, y=label)) + 
+  geom_point() +
+  geom_smooth(method='lm', formula=y~x+I(x^2)+I(x^3), se=FALSE, col='green') +
+  geom_smooth(method='lm', formula=y~x+I(x^2)+I(x^3)+I(x^4)+I(x^5)+I(x^6), se=FALSE, col='purple') +
+geom_vline(xintercept = 150, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = 5.3, linetype = "dashed", color = "red") +
+  annotate("segment", x = 0, xend = 70, y = 4.8, yend = 6.5, color = "red", linetype = "dashed", size = 1.5) +
+  annotate("segment", x = 70, xend = 150, y = 6.5, yend = 5.0, color = "red", linetype = "dashed", size = 1.5) +
+  theme_light()
+```
+
+
+
+```{r}
+ggplot(datasinR, aes(x=avg_session_time, y=label)) + 
+  geom_point() +
+  geom_smooth(method='lm', formula=y~x+I(x^2)+I(x^3), se=FALSE, col='green') +
+  geom_smooth(method='lm', formula=y~x+I(x^2)+I(x^3)+I(x^4)+I(x^5)+I(x^6), se=FALSE, col='purple') +
+  geom_vline(xintercept = 150, linetype = "dashed", color = "red") +
+  geom_hline(yintercept = 5.3, linetype = "dashed", color = "red") +
+  annotate("segment", x = 0, xend = 70, y = 4.8, yend = 6.5, color = "red", linetype = "dashed", size = 1.5) +
+  annotate("segment", x = 70, xend = 150, y = 6.5, yend = 5.0, color = "red", linetype = "dashed", size = 1.5) +
+  geom_vline(xintercept = 70, linetype = "dashed", color = "red", size = 1.3) +
+  xlab("Tiempo promedio por sesión")+
+  ylab("Notas")+ 
+  ggtitle("Notas según tiempo promedio por sesión")+ 
+  theme_light()
+```
+
+
+
+
+
+Regresionar la data de forma exploratoria con regresiones lineales
+```{r}
+r1 <- lm(label~log(conteo) + sessions + similitud , data)
+r2 <- lm(label~log(conteo) + sessions + similitud + avg_session_time, data)
+r3 <- lm(label~log(conteo) + conteo + sessions, data)
+r4 <- lm(label~log(conteo) + conteo + sessions + avg_session_time, data)
+r5 <- lm(label~log(conteo) + conteo + sessions + similitud, data)
+r6 <- lm(label~log(conteo) + conteo + sessions + similitud + avg_session_time, data)
+
+
+r11 <- lm(label~log(conteo) + sessions + similitud , datasinR)
+r21 <- lm(label~log(conteo) + sessions + similitud + avg_session_time, datasinR)
+r31 <- lm(label~log(conteo) + conteo + sessions, datasinR)
+r41 <- lm(label~log(conteo) + conteo + sessions + avg_session_time, datasinR)
+r51 <- lm(label~log(conteo) + conteo + sessions + similitud, datasinR)
+r61 <- lm(label~log(conteo) + conteo + sessions + similitud + avg_session_time, datasinR)
+
+```
+
+Visualizar las regresiones lineales
+```{r}
+stargazer(r1, r2, r3, r4, r5, r6, type = "text") 
+stargazer(r11, r21, r31, r41, r51, r61, type = "text") 
+```
+
+
+```{r}
+mod0<- lm(label ~ avg_session_time, data = data)
+mod1 <- lm(label ~ poly(avg_session_time, 2), data = data)
+mod2 <- lm(label ~ poly(avg_session_time, 3), data = data)
+mod3 <- lm(label ~ poly(avg_session_time, 4), data = data)
+```
+
+
+```{r}
+stargazer(mod0, mod1, mod2, mod3, type = "text")
+```
+Con esto notamos que el mejor modelo a considerar es el modelo polinómico cúbico
+
+```{r}
+mod01 <- lm(label ~ avg_session_time, data = datasinR)
+mod11 <- lm(label ~ poly(avg_session_time, 2), data = datasinR)
+mod21 <- lm(label ~ poly(avg_session_time, 3), data = datasinR)
+mod31 <- lm(label ~ poly(avg_session_time, 4), data = datasinR)
+```
+
+
+```{r}
+stargazer(mod01, mod11, mod21, mod31, type = "text")
+```
+
+```{r}
+pol1 <- lm(label ~ poly(avg_session_time, 3) + log(conteo) + conteo + sessions , data = datasinR)
+pol2 <- lm(label ~ poly(avg_session_time, 3) + log(conteo) + conteo + sessions , data = data)
+pol20 <- lm(label ~ poly(avg_session_time, 3) + poly(log(conteo),4) + sessions , data = data)
+pol201 <- lm(label ~ poly(avg_session_time, 3) + poly(conteo,10) + sessions , data = data)
+pol202 <- lm(label ~ poly(avg_session_time, 3) + poly(conteo,10) + sessions , data = datasinR)
+pol3 <- lm(label ~ poly(avg_session_time, 3) + log(conteo) + conteo + sessions + similitud, data = datasinR)
+pol4 <- lm(label ~ poly(avg_session_time, 3) + log(conteo) + conteo + sessions + similitud, data = data)
+```
+
+
+```{r}
+stargazer(pol2, pol20, pol201, pol202, type = "text")
+```
+
+
+```{r}
+stargazer(pol1, pol201, pol3, pol4, type = "text")
+```
+
+
+```{r}
+pol11 <- lm(label ~ poly(avg_session_time, 3) + poly(conteo, 10) + sessions + avg_session_time*T, data = datasinR)
+pol21 <- lm(label ~ poly(avg_session_time, 3) + poly(conteo, 10) + sessions + avg_session_time*T, data = data)
+pol31 <- lm(label ~ poly(avg_session_time, 3) + poly(conteo, 10) + sessions + avg_session_time*T + similitud, data = datasinR)
+pol41 <- lm(label ~ poly(avg_session_time, 3) + poly(conteo, 10) + sessions +  similitud, data = data)
+```
+
+
+```{r}
+stargazer(pol11, pol21, pol31, pol41, type = "text")
+```
+
+```{r}
+pol311 <- lm(label ~ poly(avg_session_time, 3) + poly(conteo, 10) + sessions + total_time, data = datasinR)
+pol411 <- lm(label ~ poly(avg_session_time, 3) + poly(conteo, 10) + sessions + poly(total_time,4), data = data)
+```
+
+```{r}
+stargazer(pol31, pol41, pol311, pol411, type = "text")
+```
+
+```{r}
+pol44 <- lm(label ~ poly(avg_session_time, 3) + poly(conteo, 10) + sessions +  similitud + total_time, data = data)
+```
+
+```{r}
+stargazer(pol41, pol44, type = "text")
+```
+
+
+
+
+------------------------------------------------------------------------------------------------------------------------
+Ahora se crean los modelos de clasificación
+
+```{r}
+library(caret)
+library(e1071)
+library(class)
+library(randomForest)
+library(gbm)
+```
+
+
+```{r}
+# set.seed() para reproducibilidad
+set.seed(123)
+```
+
+
+```{r}
+# Dividir los datos en conjuntos de entrenamiento y prueba
+trainIndex <- createDataPartition(data$rendimiento_academico, p = .8, list = FALSE, times = 1)
+trainData <- data[trainIndex,]
+testData <- data[-trainIndex,]
+
+```
+
+
+Naive Bayes
+```{r}
+model_nb <- naiveBayes(rendimiento_academico ~ ., data = trainData)
+predictions_nb <- predict(model_nb, newdata = testData)
+```
+
+SVM
+```{r}
+model_svm <- svm(rendimiento_academico ~ ., data = trainData, probability = TRUE)
+predictions_svm <- predict(model_svm, newdata = testData)
+```
+
+
+Evaluar el rendimiento del modelo
+```{r}
+evaluate_model <- function(predictions, actual) {
+  cm <- confusionMatrix(predictions, actual)
+  accuracy <- cm$overall['Accuracy']
+  precision <- cm$byClass['Pos Pred Value']
+  recall <- cm$byClass['Sensitivity']
+  f1 <- 2 * (precision * recall) / (precision + recall)
+  
+  list(accuracy = accuracy, precision = precision, recall = recall, f1 = f1, confusion_matrix = cm$table)
+}
+
+```
+
+```{r}
+# Comparar los resultados
+cat("Resultados de Naive Bayes:\n")
+print(results_nb)
+
+cat("\nResultados de SVM:\n")
+print(results_svm)
+
+# Seleccionar el mejor modelo basado en las métricas de evaluación
+if (results_nb$accuracy > results_svm$accuracy) {
+  cat("\nEl modelo de Naive Bayes es mejor basado en la Accuracy.\n")
+} else {
+  cat("\nEl modelo de SVM es mejor basado en la Accuracy.\n")
+}
+
+```
+
+
+
+
+
+
