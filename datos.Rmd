@@ -1,0 +1,327 @@
+---
+title: "EOL"
+output:
+  html_document: default
+  pdf_document: default
+date: '2024-05-26'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+Librerias
+```{r}
+library(dplyr)
+library(ggplot2) #libreria para graficas
+library(corrplot) #libreria para graficar correlaciones
+library(mfx) #libreria para estudiar los efectos marginales
+library(stargazer)
+library(lubridate)
+library(stringr)
+library(tidyr)
+library(writexl)
+```
+
+Leemos la base de datos
+```{r}
+ds<- read.csv("C:/Users/René/Documents/CarpetaMomo/data/data_econo.csv")
+```
+
+Filtramos las columnas que no usaremos
+```{r}
+db <- ds[, -c(5,9, 10, 12, 14, 15, 16, 17, 18), drop = FALSE]
+```
+
+Nombres de columnas
+```{r}
+names(db)
+```
+Ajustar la columna time a variables de tiempo
+```{r}
+db <- db %>%
+  mutate(time = ymd_hms(time))
+```
+
+Eliminamos eventos que ensucian el contador de interacciones significantes (este es un segundo acercamiento a la creación de la lista de eventos significativos ideal)
+```{r}
+evento_a_eliminar <- "/courses/(course-code)/xblock/block-v1:(block-code)@video+block@(uuid)/handler/transcript/translation/en"
+evento_a_eliminar2 <- "page_close"
+evento_a_eliminar <- "/courses/(course-code)/xblock/block-v1:(block-code)@video+block@(uuid)/handler/transcript/translation/en" #traduccion que no existe
+evento_a_eliminar2 <- "page_close" #cerrar pagina
+evento_a_eliminar3 <- "/courses/(course-code)/course/"  #home del curso
+evento_a_eliminar4 <- "/courses/(course-code)/jump_to/(block-code)@vertical@(uuid)"
+evento_a_eliminar5 <- "/courses/(course-code)/course_wiki"  #información general del curso
+evento_a_eliminar6 <- "/courses/(course-code)/wiki/(course-code)/"
+evento_a_eliminar7 <- "/courses/(course-code)/wiki/(course-code)/_edit/"
+evento_a_eliminar8 <- "/courses/(course-code)/discussion/(discussion-id)/(thread-id)/delete"
+evento_a_eliminar9 <- "/courses/(course-code)/wiki/"
+evento_a_eliminar10 <- "/courses/(course-code)/"
+evento_a_eliminar11 <- "/api/bookmarks/v1/bookmarks/(username),(block-code)+type@vertical+block/(uuid)"
+evento_a_eliminar12 <- "/courses/(course-code)/jump_to/(block-code)@sequential@(uuid)"
+evento_a_eliminar13 <- "/courses/(course-code)/(uuid-course)/"
+evento_a_eliminar14 <- "/courses/(course-code)/courseware/(uuid1)/(uuid2)/(tab-n)"
+evento_a_eliminar15 <- "/courses/(course-code)/xblock/block-v1:(block-code)@html+block@(uuid)/handler/publish_completion"
+evento_a_eliminar16 <- "/courses/(course-code)/xblock/block-v1:(block-code)@sequential+block@(uuid)/handler/xmodule_handler/goto_position"
+evento_a_eliminar17 <- "/courses/(course-code)/xblock/block-v1:(block-code)@sequential+block@(uuid)/handler/xmodule_handler/get_completion"
+evento_a_eliminar18 <- "/courses/(course-code)/courseware/(uuid-code1)/(uuid-code2)/"
+evento_a_eliminar19 <- "/courses/(course-code)/discussion/(discussion-id)/(thread-id)/unfollow"
+evento_a_eliminar20 <- "/courses/(course-code)/eol_jump_to/(block-code)@video@(uuid)"
+evento_a_eliminar21 <- "/courses/(course-code)/discussion/(discussion-id)/threads/(thread-id)"
+evento_a_eliminar22 <- "/courses/(course-code)/jump_to/(block-code)@course+bloc"
+evento_a_eliminar23 <- "/courses/(course-code)/xblock/block-v1:(block-code)@problem+block@(uuid)/handler/xmodule_handler/problem_save"
+evento_a_eliminar24 <- "/courses/(course-code)/xblock/block-v1:(block-code)@edx_sga+block@(uuid)/handler/finalize_uploaded_assignment"
+evento_a_eliminar25 <- "/courses/(course-code)/discussion/(forum)//(inline-id)/inline"
+evento_a_eliminar26 <- "/courses/(course-code)/courseware"
+evento_a_eliminar27 <- "/courses/(course-code)/xblock/block-v1:(block-code)@video+block@(uuid)/handler/publish_completion"
+evento_a_eliminar28 <- "/courses/(course-code)/progress"
+evento_a_eliminar29 <- "edx.bi.course.upgrade.sidebarupsell.displayed"
+evento_a_eliminar30 <- "edx.ui.lms.sequence.next_selected"
+evento_a_eliminar31 <- "edx.ui.lms.sequence.previous_selected"
+evento_a_eliminar32 <- "edx.ui.lms.link_clicked"
+```
+
+Filtrar los registros
+```{r}
+db <- db %>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar))) %>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar2)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar3)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar4)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar5)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar6)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar7)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar8)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar9)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar10)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar11)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar12)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar13)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar14)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar15)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar16)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar17)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar18)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar19)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar20)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar21)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar22)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar23)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar24)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar25)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar26)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar27)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar28)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar29)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar30)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar31)))%>%
+   filter(!str_detect(grouped_event_type, fixed(evento_a_eliminar32)))
+```
+
+Contamos la cantidad de registros que cada alumne tiene agrupando por su username y manteniendo su nota (label) y ordenamos estas interacciones de mayor a menor
+```{r}
+data_conteo <- db %>%
+  group_by(username, label) %>%
+  summarize(conteo = n(), .groups = "drop")
+
+# Ordenar por 'conteo' de mayor a menor
+data <- data_conteo%>%
+  arrange(desc(conteo))
+```
+Esta DB (data) será la que se irá creando en este docuemnto y es la que se usará para crear los modelos predictivos en la segunda parte del estudio
+
+
+A la DB data se le agregará una columna que indique el tiempo promedio por sesion de cada alumne. Ahora se calcula el tiempo promedio de sesión por usuario
+```{r}
+# Asegurarse de que las fechas y horas están en el formato correcto
+dr <- db %>%
+  mutate(date = as.Date(time),
+         hour = as.numeric(format(time, "%H%M"))) %>%
+  mutate(session_date = paste(session, date, sep = "_"))
+
+# Contar las sesiones diferenciadas por día
+session_counts <- dr %>%
+  group_by(username) %>%
+  summarize(sessions = n_distinct(session_date))
+
+# Calcular el tiempo de cada sesión diferenciada por día
+session_times <- dr %>%
+  group_by(username, session_date) %>%
+  summarize(session_start = min(time),
+            session_end = max(time)) %>%
+  mutate(session_duration = as.numeric(difftime(session_end, session_start, units = "mins")))
+
+# Calcular el tiempo promedio por sesión en minutos para cada usuario
+avg_session_time <- session_times %>%
+  group_by(username) %>%
+  summarize(avg_session_time = mean(session_duration, na.rm = TRUE))
+```
+
+Ahora sumamos el tiempo total de todas las sesiones por usuario 
+```{r}
+total_session_time <- session_times %>%
+  group_by(username) %>%
+  summarize(total_time = sum(session_duration))
+```
+
+Se crea un identificador T que determina el tipo de estudiante y clasifica a los estudiantes en función de la franja horaria en la que más sesiones registran sus actividades en la plataforma educativa.
+
+Clasificar sesiones según la hora
+```{r}
+session_types <- dr %>%
+  mutate(hour = hour(time),
+         session_type = case_when(
+           hour >= 8 & hour <= 13 ~ "diurna",
+           hour >= 13 & hour <= 21 ~ "tardia",
+           TRUE ~ "nocturna"
+         ))
+```
+
+Contar el número de sesiones de cada tipo por usuario
+```{r}
+session_type_counts <- session_types %>%
+  group_by(username, session_type) %>%
+  summarize(total_sessions = n()) %>%
+  ungroup() %>%
+  pivot_wider(names_from = session_type, values_from = total_sessions, values_fill = list(total_sessions = 0))
+```
+
+
+Determinar el identificador T para cada usuario
+```{r}
+session_type_counts <- session_type_counts %>%
+  rowwise() %>%
+  mutate(T = case_when(
+    diurna > tardia & diurna > nocturna ~ 0,
+    tardia > diurna & tardia > nocturna ~ 1,
+    nocturna > diurna & nocturna > tardia ~ 2,
+    TRUE ~ NA_real_
+  ))
+```
+
+Adjuntamos el número de sesiones, el tiempo promedio por sesión, el identificador T y el tiempo total pasado en las sesiones por usuario a la base de datos data
+```{r}
+data <- data %>%
+  left_join(session_type_counts, by = "username")%>%
+  left_join(session_counts, by = "username") %>%
+  left_join(avg_session_time, by = "username") %>%
+  left_join(total_session_time, by = "username")
+```
+
+
+Ahora creamos una lista ideal de eventos basados en coeficientes de importancia, estos fueron definidos según la actividad realizada, en donde actividades directas de interacción con el video y la resolución de problemas se ponderan con un 10%, actividades de complemento a la realización de problemas y progreso en el curso se pondera con un 2% y registros de navegación que podrían ser importantes como el foro, los bookmarks o resumenes y hints, se ponderan con 0,2 % y 0,1%
+```{r}
+lista <- c("load_video", "play_video", "pause_video", "stop_video", "seek_video", "speed_change_video", 
+           "problem_check_fail", "problem_show", "showanswer", "problem_check", "problem_graded", 
+           "seq_next", "seq_prev", "seq_goto", "save_problem_fail", 
+           "edx.forum.thread.created", "edx.forum.thread.viewed", "edx.bookmark.added", 
+           "edx.course.tool.accessed", "edx.bookmark.listed", "edx.bookmark.removed", 
+           "edx.forum.response.created", "edx.problem.hint.feedback_displayed", 
+           "edx.problem.hint.demandhint_displayed", "edx.grades.problem.submitted", 
+           "edx.forum.thread.voted", "edx.forum.comment.created", "edx.forum.searched", 
+           "edx.course.home.resume_course.clicked", "edx.user.settings.changed")
+
+coeficientes_importancia <- c(0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.02, 0.02, 0.02, 
+                              0.02, 0.02, 0.02, 0.02, 0.002, 0.002, 0.002, 0.002, 0.002, 
+                              0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.002, 0.001, 0.001)
+
+```
+
+Ahora creamos un data frame para la lista y sus coeficientes
+```{r}
+ideal_df <- data.frame(event = lista, importance = coeficientes_importancia)
+```
+
+
+Se crea una función para calcular la similtud de los registros del estudiante con la lista ideal
+```{r}
+calcular_similitud <- function(eventos_usuario, ideal_df) {
+  eventos_relevantes <- unique(eventos_usuario)
+  # Filtrar los eventos relevantes que están en la secuencia ideal
+  eventos_en_ideal <- eventos_relevantes[eventos_relevantes %in% ideal_df$event]
+  # Calcular el coeficiente de similitud basado en la importancia
+  coef_similitud <- sum(ideal_df$importance[ideal_df$event %in% eventos_en_ideal])
+  return(coef_similitud * 100)
+}
+```
+
+Calcular la similitud para cada usuario (importante destacar que es un cálculo basado solo en existencia de eventos lo que podría ser sesgado y mejorarse con alguna secuencia en específico pero es muchísimo trabajo comprobado con la investigación del profesor Joaquín Roa y esto es Sequence Mining)
+```{r}
+similitud_usuarios <- db %>%
+  group_by(username) %>%
+  summarise(similitud = calcular_similitud(grouped_event_type, ideal_df))
+
+# Unir la similitud calculada a la base de datos original
+data <- data %>%
+  left_join(similitud_usuarios, by = "username")
+```
+
+
+
+
+Observamos la correlación entre variables
+```{r}
+cor_indep<- cor(data[, c("conteo","sessions","label","avg_session_time", "similitud","total_time", "T")]) #relación de correlación para ver si la cantidad de interacciones con la plataforma puede influir en el rendimiento
+corrplot(cor_indep, type = "upper", order = "hclust", tl.col = "black", tl.srt = 30) #grafico mostrando la correlacion creada
+```
+Se ve que la mayoría de las variables excepto el identificador T tienen una correlación positiva con la nota obtenida en el curso, lo más interesante es que la correlación positiva más débil es con el tiempo promedio por cada sesión de estudio y podría indicar que efectivamente una sesión más larga es mejor pero podría existir un máximo (óptimo) en este
+
+Se hace un histograma de notas para observar la distribución de estas
+```{r}
+hist(data$label, 
+     main = "Histograma de notas", 
+     xlab = "Notas", 
+     ylab = "Frecuencia", 
+     col = "blue", 
+     border = "black")
+```
+
+Y se crea otro subset de datos sin los reprobados 
+```{r}
+datasinR <- subset(data, label > 3)
+```
+
+```{r}
+write_xlsx(datasinR, "datasinR.xlsx")
+
+# Descargar el archivo
+file.show("datasinR.xlsx")
+```
+
+```{r}
+write_xlsx(data, "data.xlsx")
+
+# Descargar el archivo
+file.show("data.xlsx")
+```
+
+```{r}
+write_xlsx(db, "db.xlsx")
+
+# Descargar el archivo
+file.show("db.xlsx")
+```
+
+Con esto se tiene la base de datos final sobre la cual se realizarán los modelos y el EDA correspondiente
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
